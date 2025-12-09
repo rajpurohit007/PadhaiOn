@@ -3,6 +3,7 @@ import React from "react";
 import { useState } from "react"
 import { Link, useLocation } from "react-router-dom"
 import { GraduationCap, Menu, X, User, LogOut } from "lucide-react"
+import logo from '../assets/padhai-on_logo.jpg';
 
 export default function Navbar({ user, setUser }) {
   const [isOpen, setIsOpen] = useState(false)
@@ -46,8 +47,11 @@ export default function Navbar({ user, setUser }) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <Link to="/" className="flex items-center space-x-2">
-            <GraduationCap className="h-8 w-8 text-blue-600" />
-            <span className="text-xl font-bold text-gray-900">PadhaiOn</span>
+            <img
+              src={logo}
+              alt="PadhaiOn Logo"
+              className="h-auto w-24 object-contain"
+            />
           </Link>
 
           <div className="hidden md:flex items-center space-x-8">
@@ -135,8 +139,8 @@ export default function Navbar({ user, setUser }) {
                   key={link.path}
                   to={link.path}
                   className={`block px-3 py-2 rounded-md text-base font-medium transition-colors ${isActive(link.path)
-                      ? "text-blue-600 bg-blue-50"
-                      : "text-gray-700 hover:text-blue-600 hover:bg-gray-50"
+                    ? "text-blue-600 bg-blue-50"
+                    : "text-gray-700 hover:text-blue-600 hover:bg-gray-50"
                     }`}
                   onClick={() => setIsOpen(false)}
                 >
@@ -147,8 +151,8 @@ export default function Navbar({ user, setUser }) {
                 <Link
                   to={dashboardLink.path}
                   className={`block px-3 py-2 rounded-md text-base font-medium transition-colors ${isActive(dashboardLink.path)
-                      ? "text-blue-600 bg-blue-50"
-                      : "text-gray-700 hover:text-blue-600 hover:bg-gray-50"
+                    ? "text-blue-600 bg-blue-50"
+                    : "text-gray-700 hover:text-blue-600 hover:bg-gray-50"
                     }`}
                   onClick={() => setIsOpen(false)}
                 >

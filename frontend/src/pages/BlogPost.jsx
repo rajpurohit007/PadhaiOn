@@ -17,9 +17,9 @@ export default function BlogPost() {
       try {
         setLoading(true)
         const response = await blogsAPI.getById(id)
-        
+
         // 🚀 FIX: Access .data.data (The actual blog object), not just .data (The response wrapper)
-        const blogData = response.data.data || response.data; 
+        const blogData = response.data.data || response.data;
         setBlog(blogData)
 
         // Fetch related posts from same category
@@ -75,7 +75,7 @@ export default function BlogPost() {
             src={getImageUrl(blog.image)}
             alt={blog.title}
             className="w-full h-64 md:h-96 object-cover rounded-xl shadow-lg"
-            onError={(e) => {e.target.src = "/placeholder.svg"}}
+            onError={(e) => { e.target.src = "/placeholder.svg" }}
           />
         </div>
 
@@ -115,7 +115,10 @@ export default function BlogPost() {
         <div className="bg-white rounded-lg shadow-md p-8 mb-12">
           <div className="prose max-w-none">
             <p className="text-lg text-gray-700 mb-6 leading-relaxed font-semibold">{blog.excerpt}</p>
-            <div className="text-gray-700 leading-relaxed whitespace-pre-line">{blog.content}</div>
+            <div
+              className="text-gray-700 leading-relaxed blog-content"
+              dangerouslySetInnerHTML={{ __html: blog.content }}
+            />
           </div>
         </div>
 
@@ -130,7 +133,7 @@ export default function BlogPost() {
                     src={getImageUrl(post.image)}
                     alt={post.title}
                     className="w-full h-32 object-cover rounded-lg mb-3 group-hover:shadow-lg transition-shadow"
-                    onError={(e) => {e.target.src = "/placeholder.svg"}}
+                    onError={(e) => { e.target.src = "/placeholder.svg" }}
                   />
                   <h3 className="font-medium text-gray-900 group-hover:text-blue-600 transition-colors line-clamp-2">
                     {post.title}
