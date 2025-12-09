@@ -1,10 +1,9 @@
 "use client"
 
-import React from "react";
-import { useState, useEffect } from "react"
+import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom"
 import { Calendar, User, Clock, ArrowLeft, Share2, BookOpen } from "lucide-react"
-import { blogsAPI } from "../services/api"
+import { blogsAPI, getImageUrl } from "../services/api" // 🚀 IMPORTED getImageUrl
 
 export default function BlogPost() {
   const { id } = useParams()
@@ -18,12 +17,17 @@ export default function BlogPost() {
       try {
         setLoading(true)
         const response = await blogsAPI.getById(id)
-        setBlog(response.data)
+        
+        // 🚀 FIX: Access .data.data (The actual blog object), not just .data (The response wrapper)
+        const blogData = response.data.data || response.data; 
+        setBlog(blogData)
 
         // Fetch related posts from same category
-        if (response.data.category) {
-          const relatedResponse = await blogsAPI.getAll({ category: response.data.category, limit: 3 })
-          setRelatedPosts(relatedResponse.data.blogs.filter((b) => b._id !== id).slice(0, 3))
+        if (blogData.category) {
+          const relatedResponse = await blogsAPI.getAll({ category: blogData.category, limit: 3 })
+          // Filter out current post
+          const related = (relatedResponse.data.data || []).filter((b) => b._id !== id).slice(0, 3);
+          setRelatedPosts(related)
         }
       } catch (err) {
         console.error("Error fetching blog post:", err)
@@ -67,9 +71,11 @@ export default function BlogPost() {
 
         <div className="mb-8">
           <img
-            src={blog.image || "/placeholder.svg"}
+            // 🚀 FIX: Use getImageUrl for the main image
+            src={getImageUrl(blog.image)}
             alt={blog.title}
             className="w-full h-64 md:h-96 object-cover rounded-xl shadow-lg"
+            onError={(e) => {e.target.src = "/placeholder.svg"}}
           />
         </div>
 
@@ -108,8 +114,7 @@ export default function BlogPost() {
 
         <div className="bg-white rounded-lg shadow-md p-8 mb-12">
           <div className="prose max-w-none">
-            <p className="text-lg text-gray-700 mb-6 leading-relaxed">{blog.excerpt}</p>
-
+            <p className="text-lg text-gray-700 mb-6 leading-relaxed font-semibold">{blog.excerpt}</p>
             <div className="text-gray-700 leading-relaxed whitespace-pre-line">{blog.content}</div>
           </div>
         </div>
@@ -121,9 +126,11 @@ export default function BlogPost() {
               {relatedPosts.map((post) => (
                 <Link key={post._id} to={`/blog/${post._id}`} className="group">
                   <img
-                    src={post.image || "/placeholder.svg"}
+                    // 🚀 FIX: Use getImageUrl for related posts
+                    src={getImageUrl(post.image)}
                     alt={post.title}
                     className="w-full h-32 object-cover rounded-lg mb-3 group-hover:shadow-lg transition-shadow"
+                    onError={(e) => {e.target.src = "/placeholder.svg"}}
                   />
                   <h3 className="font-medium text-gray-900 group-hover:text-blue-600 transition-colors line-clamp-2">
                     {post.title}

@@ -1,12 +1,20 @@
-import { Link } from "react-router-dom"
-import { Calendar, User, Clock, ArrowRight } from "lucide-react"
 import React from "react";
+import { Link } from "react-router-dom";
+import { Calendar, User, Clock, ArrowRight } from "lucide-react";
+// 🚀 FIX: Import the image helper
+import { getImageUrl } from "../services/api";
 
 export default function BlogCard({ blog }) {
   return (
     <article className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
       <div className="relative">
-        <img src={blog.image || "/placeholder.svg"} alt={blog.title} className="w-full h-48 object-cover" />
+        {/* 🚀 FIX: Use getImageUrl to resolve the full backend path */}
+        <img 
+            src={getImageUrl(blog.image)} 
+            alt={blog.title} 
+            className="w-full h-48 object-cover" 
+            onError={(e) => {e.target.src = "/placeholder.svg"}} // Fallback if image fails
+        />
         <div className="absolute top-4 left-4">
           <span className="bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-medium">{blog.category}</span>
         </div>
