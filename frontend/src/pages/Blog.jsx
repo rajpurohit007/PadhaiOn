@@ -10,7 +10,7 @@ export default function Blog() {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("All")
 
-  const categories = ["All", "Study Tips", "Career Advice", "University Guide", "Academic Tips", "Study Abroad"]
+  const categories = ["All", "Study Tips", "Career Advice", "University Guide", "Academic Tips", "Study Abroad", "General"]
 
   useEffect(() => {
     // Debounce could be added here for optimization, 

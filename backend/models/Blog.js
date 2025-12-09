@@ -30,7 +30,7 @@ const blogSchema = new mongoose.Schema(
     category: {
       type: String,
       required: true,
-      enum: ["Study Tips", "Career Advice", "University Guide", "Academic Tips", "Study Abroad"],
+      enum: ["Study Tips", "Career Advice", "University Guide", "Academic Tips", "Study Abroad", "General"],
     },
     image: {
       type: String,

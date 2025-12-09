@@ -2,8 +2,9 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Users, Building2, Calendar, Star, CheckCircle, XCircle, Clock, Send, Search, Bell ,FileText,Upload,Trash2,Pencil} from "lucide-react";
 // import { adminAPI } from "../services/api";
+import ReactQuill from 'react-quill-new';
+import 'react-quill-new/dist/quill.snow.css';
 import { adminAPI, getImageUrl } from "../services/api";
-
 export default function AdminDashboard({ user }) {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("overview");
@@ -40,6 +41,27 @@ const [editingBlogId, setEditingBlogId] = useState(null);
     title: "", excerpt: "", content: "", author: "Admin", date: new Date().toISOString().split('T')[0], readTime: "5 min read", category: "Study Tips"
   });
   const [blogImage, setBlogImage] = useState(null);
+
+  const modules = {
+    toolbar: [
+      [{ 'header': [1, 2, 3, false] }],
+      [{ 'size': ['small', false, 'large', 'huge'] }],  // Font Size
+      ['bold', 'italic', 'underline', 'strike'],        // Formatting
+      [{ 'color': [] }, { 'background': [] }],          // Text Color & Highlight
+      [{ 'list': 'ordered'}, { 'list': 'bullet' }],     // Lists
+      [{ 'indent': '-1'}, { 'indent': '+1' }],          // Indentation
+      ['link', 'image'],                                // Media
+      ['clean']                                         // Remove formatting
+    ],
+  };
+
+  const formats = [
+    'header', 'size',
+    'bold', 'italic', 'underline', 'strike',
+    'color', 'background',
+    'list', 'bullet', 'indent',
+    'link', 'image'
+  ];
 
   useEffect(() => {
     if (!user || user.userType !== "admin") {
@@ -956,26 +978,38 @@ const handleEditBlog = (blog) => {
       )}
       {showBlogModal && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-              <div className="bg-white rounded-lg max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto">
+              <div className="bg-white rounded-lg max-w-4xl w-full p-6 max-h-[90vh] overflow-y-auto">
                   <h2 className="text-2xl font-bold mb-4">{editingBlogId ? "Edit Blog" : "Write New Blog"}</h2>
                   <form onSubmit={handleSaveBlog}>
                       <div className="grid grid-cols-2 gap-4 mb-4">
-                          <div className="col-span-2"><label className="block text-sm font-medium">Title</label><input className="w-full border p-2 rounded" value={blogForm.title} onChange={(e) => setBlogForm({...blogForm, title: e.target.value})} required /></div>
-                          <div><label className="block text-sm font-medium">Author</label><input className="w-full border p-2 rounded" value={blogForm.author} onChange={(e) => setBlogForm({...blogForm, author: e.target.value})} required /></div>
-                          <div><label className="block text-sm font-medium">Read Time</label><input className="w-full border p-2 rounded" value={blogForm.readTime} onChange={(e) => setBlogForm({...blogForm, readTime: e.target.value})} required /></div>
-                          <div><label className="block text-sm font-medium">Category</label><select className="w-full border p-2 rounded" value={blogForm.category} onChange={(e) => setBlogForm({...blogForm, category: e.target.value})}>{["Study Tips", "Career Advice", "University Guide", "Academic Tips", "Study Abroad"].map(c => <option key={c} value={c}>{c}</option>)}</select></div>
-                          <div><label className="block text-sm font-medium">Date</label><input type="date" className="w-full border p-2 rounded" value={blogForm.date} onChange={(e) => setBlogForm({...blogForm, date: e.target.value})} required /></div>
-                          <div className="col-span-2">
-                              <label className="block text-sm font-medium">Cover Image {editingBlogId && "(Optional)"}</label>
-                              <div className="flex items-center gap-4">
-                                  {blogImage && <img src={URL.createObjectURL(blogImage)} alt="Preview" className="w-20 h-20 object-cover rounded" />}
-                                  <label className="cursor-pointer bg-gray-100 px-4 py-2 rounded flex items-center gap-2"><Upload className="w-4 h-4" /> {editingBlogId ? "Change File" : "Choose File"}<input type="file" accept="image/*" className="hidden" onChange={(e) => setBlogImage(e.target.files[0])} /></label>
-                              </div>
+                          <input className="col-span-2 border p-2 rounded" placeholder="Title" value={blogForm.title} onChange={(e) => setBlogForm({...blogForm, title: e.target.value})} required />
+                          <input className="border p-2 rounded" placeholder="Author" value={blogForm.author} onChange={(e) => setBlogForm({...blogForm, author: e.target.value})} required />
+                          <input className="border p-2 rounded" placeholder="Read Time" value={blogForm.readTime} onChange={(e) => setBlogForm({...blogForm, readTime: e.target.value})} required />
+                          <select className="border p-2 rounded" value={blogForm.category} onChange={(e) => setBlogForm({...blogForm, category: e.target.value})}>{["Study Tips", "Career Advice", "University Guide", "Academic Tips", "Study Abroad"].map(c => <option key={c} value={c}>{c}</option>)}</select>
+                          <input type="date" className="border p-2 rounded" value={blogForm.date} onChange={(e) => setBlogForm({...blogForm, date: e.target.value})} required />
+                          
+                          <div className="col-span-2 flex items-center gap-4">
+                              {blogImage ? <span className="text-sm text-green-600">New Image Selected</span> : <span className="text-sm text-gray-500">Leave empty to keep existing</span>}
+                              <label className="cursor-pointer bg-gray-100 px-4 py-2 rounded flex items-center gap-2"><Upload className="w-4 h-4" /> Cover Image<input type="file" accept="image/*" className="hidden" onChange={(e) => setBlogImage(e.target.files[0])} /></label>
                           </div>
-                          <div className="col-span-2"><label className="block text-sm font-medium">Excerpt</label><textarea className="w-full border p-2 rounded" rows={2} value={blogForm.excerpt} onChange={(e) => setBlogForm({...blogForm, excerpt: e.target.value})} required></textarea></div>
-                          <div className="col-span-2"><label className="block text-sm font-medium">Content</label><textarea className="w-full border p-2 rounded" rows={6} value={blogForm.content} onChange={(e) => setBlogForm({...blogForm, content: e.target.value})} required></textarea></div>
+
+                          <textarea className="col-span-2 border p-2 rounded" rows={2} placeholder="Short Excerpt" value={blogForm.excerpt} onChange={(e) => setBlogForm({...blogForm, excerpt: e.target.value})} required></textarea>
+                          
+                          {/* 🚀 REACT QUILL COMPONENT */}
+                          <div className="col-span-2 mb-12 h-64">
+                              <label className="block text-sm font-medium mb-1">Full Content</label>
+                              <ReactQuill 
+                                theme="snow" 
+                                value={blogForm.content} 
+                                onChange={(content) => setBlogForm({...blogForm, content})} 
+                                modules={modules}
+                                formats={formats}
+                                className="h-full"
+                              />
+                          </div>
                       </div>
-                      <div className="flex gap-3">
+
+                      <div className="flex gap-3 pt-8 border-t mt-8">
                           <button type="submit" className="flex-1 bg-green-600 text-white py-2 rounded">{editingBlogId ? "Update Blog" : "Publish Blog"}</button>
                           <button type="button" onClick={closeBlogModal} className="flex-1 bg-gray-300 text-gray-700 py-2 rounded">Cancel</button>
                       </div>
