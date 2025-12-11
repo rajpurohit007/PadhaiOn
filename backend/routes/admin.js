@@ -288,6 +288,24 @@ router.patch("/institutions/:id/toggle-status", isAuthenticated, isAdmin, async 
   } catch (error) { res.status(500).json({ success: false }); }
 });
 
+// 🚀 CONFIRMATION: This route handles the Suspend/Activate logic
+router.patch("/institutions/:id/toggle-status", isAuthenticated, isAdmin, async (req, res) => {
+  try {
+    const institution = await Institution.findById(req.params.id);
+    if (!institution) return res.status(404).json({ success: false });
+    
+    // Toggle the status
+    institution.isActive = !institution.isActive;
+    await institution.save();
+    
+    res.json({ 
+        success: true, 
+        message: institution.isActive ? "Institution Activated" : "Institution Suspended", 
+        data: { isActive: institution.isActive } 
+    });
+  } catch (error) { res.status(500).json({ success: false }); }
+});
+
 router.delete("/institutions/:id", isAuthenticated, isAdmin, async (req, res) => {
   try {
     await Institution.findByIdAndDelete(req.params.id);

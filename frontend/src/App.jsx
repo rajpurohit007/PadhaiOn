@@ -8,7 +8,7 @@ import { Toaster } from "react-hot-toast";
 import Navbar from "./components/Navbar"
 import Footer from "./components/Footer"
 import ScrollToTop from "./components/ScrollToTop"; // IMPORTED NEW COMPONENT
-
+import GlobalSuspensionModal from './components/GlobalSuspensionModal';
 // Pages
 import Home from "./pages/Home"
 import Institutions from "./pages/Institutions"
@@ -57,10 +57,11 @@ function App() {
     <Router>
       <div className="min-h-screen bg-gray-50 flex flex-col">
         {/* Helper to reset scroll on route change */}
+        <GlobalSuspensionModal />
         <ScrollToTop />
         
         {/* Notifications */}
-        <Toaster position="top-center" reverseOrder={false} />
+        <Toaster position="top-right" reverseOrder={false} />
 
         <Navbar user={user} setUser={setUser} />
         

@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { institutionAPI, getImageUrl } from "../services/api"; 
 import toast from "react-hot-toast";
+import GlobalSuspensionModal from "../components/GlobalSuspensionModal";
 
 // --- HELPER: Calculate Relative Time ---
 const getRelativeTime = (dateString) => {
@@ -96,6 +97,75 @@ export default function InstitutionDashboard({ user }) {
   const [newThumbnail, setNewThumbnail] = useState(null);
   const [newGalleryImages, setNewGalleryImages] = useState([]);
 
+  // --- 🚀 SINGLE DATA LOADING FUNCTION ---
+useEffect(() => {
+    if (!user || user.userType !== "institution") {
+      navigate("/login");
+      return;
+    }
+
+    const loadAllData = async () => {
+        try {
+            setLoading(true);
+
+            // 1. Fetch Everything in Parallel
+            const [profileRes, inquiriesRes, reviewsRes, notifRes] = await Promise.all([
+                institutionAPI.getProfile(),
+                institutionAPI.getInquiries(),
+                institutionAPI.getReviews(),
+                institutionAPI.getNotifications()
+            ]);
+
+            // 2. Set Profile Data
+            if (profileRes.data.data) {
+                const data = profileRes.data.data;
+                setInstitutionData(data);
+                
+                const formData = {
+                    ...data,
+                    established: data.established?.toString() || "",
+                    contact: data.contact || { phone: "", email: "" },
+                    features: data.features || [],
+                    thumbnailUrl: data.thumbnailUrl || "",
+                    galleryUrls: data.galleryUrls || []
+                };
+                setProfileForm(formData);
+                setInitialProfileState(JSON.parse(JSON.stringify(formData)));
+
+                if (data.isFirstLogin) setShowPasswordModal(true);
+                else if (!data.profileCompleted) {
+                    setShowProfileAlert(true);
+                    if(activeTab === 'overview') setActiveTab("profile");
+                }
+            }
+
+            // 3. Set Other Data
+            setInquiries(inquiriesRes.data.data || []);
+            setReviews(reviewsRes.data.data || []);
+            setNotifications(notifRes.data.data || []);
+            setUnreadCount(notifRes.data.unreadCount || 0);
+
+        } catch (error) {
+            // 🚀 THE FIX: Ignore BOTH 403 (Suspended) AND 401 (Logged Out)
+            // This silences the console errors and toasts so the Modal/Redirect works.
+            if (error.response?.status === 403 || error.response?.status === 401) return;
+
+            console.error("Dashboard Load Error:", error);
+            toast.error("Contact padhaion@gmail.com");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    loadAllData();
+  }, [user, navigate]);
+
+  const handleActionError = (error, msg) => {
+      // 🚀 Helper to stop toasts on button clicks too
+      if (error.response?.status === 403 && error.response?.data?.isSuspended) return;
+      toast.error(msg);
+  };
+
   // --- DATA FETCHING ---
 
   const fetchDashboardData = async () => {
@@ -130,7 +200,10 @@ export default function InstitutionDashboard({ user }) {
       }
     } catch (error) {
       console.error("Error fetching dashboard data:", error);
-      toast.error("Failed to load dashboard data");
+      if (error.response?.status === 403 && error.response?.data?.isSuspended) return;
+
+      console.error("Error fetching dashboard data:", error);
+      toast.error("Try Login again");
     } finally {
       setLoading(false);
     }
@@ -288,12 +361,8 @@ export default function InstitutionDashboard({ user }) {
       toast.success("Profile updated successfully!");
       setShowProfileAlert(false);
       fetchDashboardData(); 
-    } catch (error) {
-      console.error("Error updating profile:", error);
-      toast.error("Failed to update profile.");
-    } finally {
-      setLoading(false);
-    }
+    } catch (error) { handleActionError(error, "Failed to update profile."); } 
+    finally { setLoading(false); }
   };
 
   const handleReplySubmit = async (reviewId) => {
@@ -305,7 +374,7 @@ export default function InstitutionDashboard({ user }) {
           setActiveReplyId(null);
           setReplyText(prev => ({...prev, [reviewId]: ""}));
           fetchReviews(); 
-      } catch (error) { toast.error("Failed to post reply."); }
+      } catch (error) { handleActionError(error, "Failed to post reply."); }
   };
 
   const handleLikeToggle = async (reviewId) => {
@@ -321,9 +390,7 @@ export default function InstitutionDashboard({ user }) {
           await institutionAPI.changePassword(newPassword);
           toast.success("Password updated successfully!");
           setShowPasswordModal(false);
-      } catch (error) {
-          toast.error("Failed to update password");
-      }
+      } catch (error) { handleActionError(error, "Failed to update password"); }
   };
 
   const hasUnsavedChanges = 

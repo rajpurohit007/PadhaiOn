@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Users, Building2, Calendar, Star, CheckCircle, XCircle, Clock, Send, Search, Bell ,FileText,Upload,Trash2,Pencil} from "lucide-react";
+import { Users, Building2, Calendar, Star, Ban, Unlock, CheckCircle, XCircle, Clock, Send, Search, Bell ,FileText,Upload,Trash2,Pencil} from "lucide-react";
 // import { adminAPI } from "../services/api";
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
+import toast from "react-hot-toast";
 import { adminAPI, getImageUrl } from "../services/api";
 export default function AdminDashboard({ user }) {
   const navigate = useNavigate();
@@ -93,7 +94,7 @@ const [editingBlogId, setEditingBlogId] = useState(null);
       setBlogs(blogsRes.data.data);
     } catch (error) {
       console.error("Error loading dashboard:", error);
-      alert("Failed to load dashboard data");
+      toast.error("Failed to load dashboard data");
     } finally {
       setLoading(false);
     }
@@ -104,11 +105,11 @@ const [editingBlogId, setEditingBlogId] = useState(null);
 
     try {
       await adminAPI.approveInstitutionRequest(id);
-      alert("Institution approved! Credentials sent via email.");
+      toast.success("Institution approved! Credentials sent via email.");
       loadDashboardData();
     } catch (error) {
       console.error("Error approving institution:", error);
-      alert("Failed to approve institution");
+      toast.error("Failed to approve institution");
     }
   };
 
@@ -118,11 +119,11 @@ const [editingBlogId, setEditingBlogId] = useState(null);
 
     try {
       await adminAPI.rejectInstitutionRequest(id, { reason });
-      alert("Institution request rejected");
+      toast.success("Institution request rejected");
       loadDashboardData();
     } catch (error) {
       console.error("Error rejecting institution:", error);
-      alert("Failed to reject institution");
+      toast.error("Failed to reject institution");
     }
   };
 
@@ -132,11 +133,11 @@ const [editingBlogId, setEditingBlogId] = useState(null);
 
     try {
       await adminAPI.deleteInstitution(id);
-      alert("Institution deleted successfully.");
+      toast.success("Institution deleted successfully.");
       loadDashboardData(); // Refresh list
     } catch (error) {
       console.error("Error deleting institution:", error);
-      alert("Failed to delete institution");
+      toast.error("Failed to delete institution");
     }
   };
 
@@ -147,17 +148,17 @@ const [editingBlogId, setEditingBlogId] = useState(null);
 
   const submitConsultationApproval = async () => {
     if (!approvalData.scheduledDate || !approvalData.scheduledTime) {
-      alert("Please fill in date and time");
+      toast.error("Please fill in date and time");
       return;
     }
 
     if (approvalData.mode === "online" && !approvalData.meetingLink) {
-      alert("Please provide meeting link for online consultation");
+      toast.error("Please provide meeting link for online consultation");
       return;
     }
 
     if (approvalData.mode === "offline" && !approvalData.location) {
-      alert("Please provide location for offline consultation");
+     toast.error("Please provide location for offline consultation");
       return;
     }
 
@@ -165,7 +166,7 @@ const [editingBlogId, setEditingBlogId] = useState(null);
 
     try {
       await adminAPI.approveConsultation(selectedConsultation._id, approvalData);
-      alert("Consultation approved and student notified!");
+      toast.success("Consultation approved and student notified!");
       setShowApprovalModal(false);
       setApprovalData({
         scheduledDate: "",
@@ -178,7 +179,7 @@ const [editingBlogId, setEditingBlogId] = useState(null);
       loadDashboardData();
     } catch (error) {
       console.error("Error approving consultation:", error);
-      alert("Failed to approve consultation");
+      toast.error("Failed to approve consultation");
     }
   };
 
@@ -188,11 +189,11 @@ const [editingBlogId, setEditingBlogId] = useState(null);
 
     try {
       await adminAPI.rejectConsultation(id, { reason });
-      alert("Consultation rejected and student notified");
+      toast.success("Consultation rejected and student notified");
       loadDashboardData();
     } catch (error) {
       console.error("Error rejecting consultation:", error);
-      alert("Failed to reject consultation");
+      toast.error("Failed to reject consultation");
     }
   };
 
@@ -201,22 +202,22 @@ const [editingBlogId, setEditingBlogId] = useState(null);
 
     try {
       await adminAPI.deleteReview(id);
-      alert("Review deleted");
+      toast.success("Review deleted");
       loadDashboardData();
     } catch (error) {
       console.error("Error deleting review:", error);
-      alert("Failed to delete review");
+      toast.error("Failed to delete review")
     }
   };
 
   const handleToggleUserStatus = async (id) => {
     try {
       await adminAPI.toggleUserStatus(id);
-      alert("User status updated");
+      toast.success("User status updated");
       loadDashboardData();
     } catch (error) {
       console.error("Error toggling user status:", error);
-      alert("Failed to update user status");
+      toast.error("Failed to update user status");
     }
   };
 
@@ -229,7 +230,7 @@ const [editingBlogId, setEditingBlogId] = useState(null);
   const submitBulkNotification = async (e) => {
     e.preventDefault();
     if (!notifData.title || !notifData.message) {
-        alert("Please fill all fields");
+        toast.error("Please fill all fields");
         return;
     }
 
@@ -242,17 +243,17 @@ const [editingBlogId, setEditingBlogId] = useState(null);
           type: "admin_broadcast" 
       });
       
-      alert(`Notification sent to ${notifData.target === 'all' ? 'everyone' : 'all ' + notifData.target + 's'}`);
+      toast.success(`Notification sent to ${notifData.target === 'all' ? 'everyone' : 'all ' + notifData.target + 's'}`);
       setShowNotifModal(false);
       setNotifData({ target: "all", title: "", message: "" });
     } catch (error) {
       console.error("Error sending notification:", error);
-      alert("Failed to send notification");
+      toast.error("Failed to send notification");
     }
   };
 const handleCreateBlog = async (e) => {
       e.preventDefault();
-      if (!blogImage) return alert("Please upload an image");
+      if (!blogImage) return toast.error("Please upload an image");
       
       try {
           const formData = new FormData();
@@ -260,14 +261,14 @@ const handleCreateBlog = async (e) => {
           formData.append("image", blogImage);
 
           await adminAPI.createBlog(formData);
-          alert("Blog published successfully!");
+          toast.success("Blog published successfully!");
           setShowBlogModal(false);
           setBlogForm({ title: "", excerpt: "", content: "", author: "Admin", date: new Date().toISOString().split('T')[0], readTime: "5 min read", category: "Study Tips" });
           setBlogImage(null);
           loadDashboardData();
       } catch (error) {
           console.error("Blog Error:", error);
-          alert("Failed to create blog");
+          toast.error("Failed to create blog");
       }
   };
 
@@ -290,7 +291,7 @@ const handleEditBlog = (blog) => {
       e.preventDefault();
       
       // Image is required only if creating a NEW blog
-      if (!editingBlogId && !blogImage) return alert("Please upload an image for new blogs.");
+      if (!editingBlogId && !blogImage) return toast.error("Please upload an image for new blogs.");
       
       try {
           const formData = new FormData();
@@ -302,27 +303,27 @@ const handleEditBlog = (blog) => {
           if (editingBlogId) {
               // 🚀 UPDATE MODE
               await adminAPI.updateBlog(editingBlogId, formData);
-              alert("Blog updated successfully!");
+              toast.success("Blog updated successfully!");
           } else {
               // 🚀 CREATE MODE
               await adminAPI.createBlog(formData);
-              alert("Blog published successfully!");
+              toast.success("Blog published successfully!");
           }
 
           closeBlogModal();
           loadDashboardData();
       } catch (error) {
           console.error("Blog Error:", error);
-          alert("Failed to save blog");
+          toast.error("Failed to save blog");
       }
   };
   const handleDeleteBlog = async (id) => {
       if (!confirm("Delete this blog?")) return;
       try {
           await adminAPI.deleteBlog(id);
-          alert("Deleted");
+          toast.success("Deleted");
           loadDashboardData();
-      } catch (error) { console.error(error); alert("Failed to delete"); }
+      } catch (error) { console.error(error); toast.error("Failed to delete"); }
   };
 
   const closeBlogModal = () => {
@@ -353,6 +354,34 @@ const handleEditBlog = (blog) => {
     if (searchTerm && !r.institutionName?.toLowerCase().includes(searchTerm.toLowerCase())) return false;
     return true;
   });
+
+  const handleToggleInstitutionStatus = async (id, currentStatus) => {
+    const action = currentStatus ? "suspend" : "activate";
+    if (!confirm(`Are you sure you want to ${action} this institution?`)) return;
+
+    try {
+        // NOTE: Ensure your adminAPI has 'toggleInstitutionStatus' mapped to the route "/institutions/:id/toggle-status"
+        // If not, update your frontend/src/services/api.js accordingly.
+        // Assuming direct axios call or adminAPI method exists:
+        await adminAPI.toggleInstitutionStatus(id); 
+        
+        if (currentStatus) {
+            // Was Active -> Now Suspended
+            toast.success("Account suspended successfully.");
+        } else {
+            // Was Suspended -> Now Activated
+            // 🚀 YOUR REQUESTED MESSAGE
+            toast.success(
+                "Account activated successfully! User can now login to their dashboard.", 
+                { duration: 5000, icon: '🔓' }
+            );
+        }
+        loadDashboardData();
+    } catch (error) {
+        console.error("Error toggling status:", error);
+        toast.error("Failed to update status");
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -569,12 +598,29 @@ const handleEditBlog = (blog) => {
                             <p className="text-sm text-gray-600">Contact: {institution.ownerId?.email || "N/A"}</p>
                           </div>
                           {/* 🚀 Delete Button */}
-                          <button 
-                            onClick={() => handleDeleteInstitution(institution._id)}
-                            className="text-red-600 hover:text-red-800 font-medium"
-                          >
-                            Delete
-                          </button>
+                          <div className="flex flex-col gap-2">
+                            <button 
+                                onClick={() => handleToggleInstitutionStatus(institution._id, institution.isActive)}
+                                className={`flex items-center px-3 py-1 rounded text-sm font-medium ${
+                                    institution.isActive 
+                                    ? "text-yellow-600 hover:bg-yellow-100" 
+                                    : "text-green-600 hover:bg-green-100"
+                                }`}
+                              >
+                                {institution.isActive ? (
+                                    <> <Ban className="w-4 h-4 mr-1" /> Suspend </>
+                                ) : (
+                                    <> <Unlock className="w-4 h-4 mr-1" /> Activate </>
+                                )}
+                              </button>
+                              <button 
+                                onClick={() => handleDeleteInstitution(institution._id)}
+                                className="flex items-center px-3 py-1 text-red-600 hover:bg-red-100 rounded text-sm font-medium"
+                              >
+                                <Trash2 className="w-4 h-4 mr-1" /> Delete
+                              </button>
+                          </div>
+                          
                         </div>
                       </div>
                     ))}

@@ -45,7 +45,7 @@ export default function Footer() {
                   Institutions
                 </Link>
               </li>
-              <li>
+              <ul>
                 <li>
                   <Link to="/about" className="text-gray-300 hover:text-white transition-colors">
                     About Us
@@ -54,7 +54,7 @@ export default function Footer() {
                 <Link to="/blog" className="text-gray-300 hover:text-white transition-colors">
                   Blog
                 </Link>
-              </li>
+              </ul>
               <li>
                 <Link to="/book-consultation" className="text-gray-300 hover:text-white transition-colors">
                   Book Consultation
