@@ -3,7 +3,7 @@ import { Users, Target, Linkedin, Mail } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 import rajImg from '../assets/Raj-Image-crop-2.jpg'; 
-import vimalImg from '../assets/Vimal-img-crop.jpg'; 
+import vimalImg from '../assets/vimal.jpg'; 
 import shrutiImg from '../assets/shruti-img-crop.jpg'; 
 
 const TeamMember = ({ name, role, description, image, linkedin, email }) => (

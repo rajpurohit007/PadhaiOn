@@ -5,7 +5,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-d
 import { Toaster } from "react-hot-toast";
 
 // Components
-import Navbar from "./components/Navbar"
+import Navbar from "./components/NavBar"
 import Footer from "./components/Footer"
 import ScrollToTop from "./components/ScrollToTop"; // IMPORTED NEW COMPONENT
 import GlobalSuspensionModal from './components/GlobalSuspensionModal';
