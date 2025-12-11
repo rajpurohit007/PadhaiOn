@@ -71,11 +71,16 @@ router.post("/register", uploadFields, async (req, res) => {
         let parsedFee = null;
         try { parsedFee = JSON.parse(feeStructure); } catch (e) {}
 
+
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+
         const newRequest = new InstitutionRequest({
             institutionName: name,
             email, phone, category, location, city, established, specialization, description, totalStudents,
             thumbnailUrl, galleryUrls, feeStructure: parsedFee,
-            status: 'pending'
+            status: 'pending',
+            password: hashedPassword
         });
 
         await newRequest.save();
@@ -129,19 +134,34 @@ router.post("/login", async (req, res) => {
         return res.status(400).json({ success: false, message: "Invalid Credentials" });
     }
 
+   // 3. 🚀 HYBRID PASSWORD CHECK (Fixes the Bug)
     let isMatch = false;
+    let needsRehash = false; // Flag to upgrade plain text passwords
 
-    if (password === account.password) {
-        isMatch = true;
-    } 
-    else if (account.password && account.password.startsWith("$2")) {
+    // Check A: Is it a valid Bcrypt hash?
+    // bcrypt hashes usually start with $2a$ or $2b$
+    if (account.password && account.password.startsWith("$2")) {
         isMatch = await bcrypt.compare(password, account.password);
+    } else {
+        // Check B: Is it plain text? (Legacy support)
+        if (account.password === password) {
+            isMatch = true;
+            needsRehash = true; // Mark for security upgrade
+        }
     }
 
     if (!isMatch) {
         return res.status(400).json({ success: false, message: "Invalid Credentials" });
     }
 
+    // 🚀 SELF-HEALING: If we found a plain text match, secure it now!
+    if (needsRehash) {
+        const salt = await bcrypt.genSalt(10);
+        account.password = await bcrypt.hash(password, salt);
+        await account.save();
+    }
+
+    // 4. Generate Token & Response
     const payload = { 
         user: { 
             id: account._id, 
@@ -177,7 +197,6 @@ router.post("/login", async (req, res) => {
     res.status(500).send("Server Error");
   }
 });
-
 // --- FORGOT PASSWORD ---
 router.post("/forgot-password", async (req, res) => {
   try {
@@ -221,14 +240,30 @@ router.post("/reset-password", async (req, res) => {
     const { email, otp, newPassword, userType } = req.body;
     let account = null;
 
+    // 1. Find Account
     if (userType === 'institution') account = await Institution.findOne({ email });
     else account = await User.findOne({ email });
 
     if (!account) return res.status(404).json({ success: false, message: "User not found." });
 
-    if (account.resetOtp !== otp || account.resetOtpExpires < Date.now()) {
+
+    // 2. Validate OTP
+    // Ensure both are strings and trimmed to avoid whitespace mismatch
+    if (String(account.resetOtp).trim() !== String(otp).trim() || account.resetOtpExpires < Date.now()) {
       return res.status(400).json({ success: false, message: "Invalid or expired OTP." });
     }
+
+    // 3. 🚀 FIX: Manually Hash Password for EVERYONE (Student AND Institution)
+    const salt = await bcrypt.genSalt(10);
+    account.password = await bcrypt.hash(newPassword, salt);
+
+    // 4. Clear OTP fields
+    account.resetOtp = undefined;
+    account.resetOtpExpires = undefined;
+    
+    await account.save();
+
+    res.json({ success: true, message: "Password reset successfully. Please login." }); 
 
     if (userType === 'student') {
         const salt = await bcrypt.genSalt(10);
@@ -246,6 +281,8 @@ router.post("/reset-password", async (req, res) => {
   } catch (error) {
     res.status(500).json({ success: false, message: "Server Error", error: error.message });
   }
+
+  
 });
 
 // ==========================================

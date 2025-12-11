@@ -20,6 +20,12 @@ const institutionSchema = new mongoose.Schema(
       default: "institution",
       immutable: true
     },
+    resetOtp: { 
+      type: String 
+    },
+    resetOtpExpires: { 
+      type: Date 
+    },
     isFirstLogin: { // NEW FIELD
       type: Boolean,
       default: true, 
