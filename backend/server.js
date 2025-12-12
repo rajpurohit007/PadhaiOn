@@ -63,6 +63,12 @@ mongoose
     })
     .then(() => {
         console.log("MongoDB Connected Successfully");
+        require("./models/Institution");
+        require("./models/InstitutionRequest"); // <-- 🚀 ADD THIS
+        require("./models/Inquiry");
+        require("./models/Review");
+        require("./models/Notification");
+        require("./models/Consultation");
         // Ensure models are loaded before calling any functions that use them
         const User = require("./models/User"); 
         seedAdmin(User); // Pass the User model to seedAdmin
@@ -71,6 +77,7 @@ mongoose
 
 // Import Routes
 const institutionRoutes = require("./routes/institutions");
+
 const blogRoutes = require("./routes/blogs");
 const courseRoutes = require("./routes/courses");
 const userRoutes = require("./routes/users");
