@@ -102,7 +102,7 @@ function App() {
                     user ? (
                         // Block admin access here (redundant, but good to keep clean)
                         user.userType === "admin" ? (
-                            <Navigate to="/admin-dashboard" replace />
+                            <Navigate to="/admin-panel" replace />
                         ) : user.userType === "institution" ? (
                             <Navigate to="/institution-dashboard" replace />
                         ) : user.userType === "student" ? (
