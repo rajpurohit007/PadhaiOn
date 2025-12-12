@@ -146,7 +146,7 @@ api.interceptors.response.use(
   }
 );
 export const adminAPI = {
-  login: (data) => api.post("/admin/login", data),
+  login: (data) => api.post("/users/login", data), // Changed from /admin/login to /users/login
   getDashboardStats: () => api.get("/admin/dashboard/stats"),
   getStudents: (params) => api.get("/admin/students", { params }),
   getInstitutions: (params) => api.get("/admin/institutions", { params }),
@@ -162,10 +162,8 @@ export const adminAPI = {
   deleteReview: (id) => api.delete(`/admin/reviews/${id}`),
   sendNotification: (data) => api.post("/admin/notifications/send", data),
   bulkSendNotification: (data) => api.post("/admin/notifications/bulk-send", data),
-  toggleUserStatus: (id) => api.patch(`/admin/users/${id}/toggle-status`),
   deleteUser: (id) => api.delete(`/admin/users/${id}`),
   deleteInstitution: (id) => api.delete(`/admin/institutions/${id}`),
-
   getBlogs: () => api.get("/admin/blogs"),
   createBlog: (data) => api.post("/admin/blogs", data),
   updateBlog: (id, data) => api.put(`/admin/blogs/${id}`, data),
