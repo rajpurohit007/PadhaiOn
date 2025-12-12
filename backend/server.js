@@ -64,19 +64,6 @@ mongoose
     .then(() => {
         console.log("MongoDB Connected Successfully");
         
-        // Ensure models are loaded before calling any functions that use them
-        require("./models/User"); // Required for seedAdmin
-        require("./models/Institution");
-        require("./models/InstitutionRequest");
-        require("./models/Review");
-        require("./models/Inquiry");
-        require("./models/Notification");
-        require("./models/Consultation");
-        require("./models/Blog"); // Assuming you have a Blog model
-        require("./models/Course"); // Assuming you have a Course model
-        require("./models/Contact"); // Assuming you have a Contact model
-        require("./models/Testimonial"); // Assuming you have a Testimonial model
-        // require("./models/Career"); // Assuming you have a Career model
         const User = require("./models/User"); 
         seedAdmin(User); // Pass the User model to seedAdmin
     })
