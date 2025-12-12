@@ -45,7 +45,42 @@ const safeSendConsultationEmail = async (email, name, details) => {
 };
 
 // --- ROUTES ---
+router.post("/login", async (req, res) => {
+    const { email, password } = req.body;
+    try {
+        const user = await User.findOne({ email });
 
+        if (!user || !(await bcrypt.compare(password, user.password))) {
+            return res.status(401).json({ message: "Invalid Credentials" });
+        }
+
+        // Must be 'admin' to use this route
+        if (user.userType !== 'admin') { 
+            return res.status(403).json({ message: "Access Denied: Dedicated to Administrators only." });
+        }
+
+        // Login successful - Generate Token
+        const payload = { user: { id: user._id, userType: user.userType, name: user.name } };
+        
+        jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "7d" }, (err, token) => {
+            if (err) throw err;
+            res.json({ 
+                success: true, 
+                token, 
+                data: { 
+                    id: user._id, 
+                    name: user.name, 
+                    email: user.email, 
+                    userType: user.userType
+                } 
+            });
+        });
+
+    } catch (error) {
+        console.error("Admin Login Error:", error);
+        res.status(500).json({ message: "Server error during admin login" });
+    }
+});
 router.get("/dashboard/stats", isAuthenticated, isAdmin, async (req, res) => {
     try {
         const totalStudents = await User.countDocuments({ userType: "student" });

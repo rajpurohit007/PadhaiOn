@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff, Mail, Lock, ArrowRight } from "lucide-react"; 
 // 🚀 Use the general usersAPI as the admin login path is exposed there
-import { usersAPI } from "../services/api"; 
+import { usersAPI , adminAPI } from "../services/api"; 
 import toast from "react-hot-toast";
 
 export default function AdminLoginPage({ setUser }) {
@@ -28,7 +28,7 @@ export default function AdminLoginPage({ setUser }) {
       setLoading(true);
 
       // 🚀 CALL THE DEDICATED ADMIN BACKEND ROUTE
-      let response = await usersAPI.adminLogin({ 
+      let response = await adminAPI.login({ 
         email: formData.email, 
         password: formData.password 
       });
