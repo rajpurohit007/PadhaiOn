@@ -1,10 +1,24 @@
 import axios from "axios";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
-const BACKEND_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || "http://localhost:5000";
-// const BACKEND_URL = API_BASE_URL.replace('/api', '');
+// const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+// const BACKEND_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || "http://localhost:5000";
+// // const BACKEND_URL = API_BASE_URL.replace('/api', '');
+// const api = axios.create({
+//   baseURL: API_BASE_URL,
+// });
+
+// New, cleaned up logic:
+// 1. Get the base domain (https://api.padhaion.com) from Vercel ENV
+const BASE_DOMAIN = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
+// 2. Define the full API URL by adding the /api prefix
+const API_BASE_URL = `${BASE_DOMAIN}/api`;
+
+// 3. BACKEND_URL is the domain without the /api, used for images.
+const BACKEND_URL = BASE_DOMAIN; 
+
 const api = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: API_BASE_URL, // This is now always correctly: ...padhaion.com/api
 });
 
 export const getImageUrl = (url) => {
