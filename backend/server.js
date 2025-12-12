@@ -63,13 +63,20 @@ mongoose
     })
     .then(() => {
         console.log("MongoDB Connected Successfully");
+        
+        // Ensure models are loaded before calling any functions that use them
+        require("./models/User"); // Required for seedAdmin
         require("./models/Institution");
-        require("./models/InstitutionRequest"); // <-- 🚀 ADD THIS
-        require("./models/Inquiry");
+        require("./models/InstitutionRequest");
         require("./models/Review");
+        require("./models/Inquiry");
         require("./models/Notification");
         require("./models/Consultation");
-        // Ensure models are loaded before calling any functions that use them
+        require("./models/Blog"); // Assuming you have a Blog model
+        require("./models/Course"); // Assuming you have a Course model
+        require("./models/Contact"); // Assuming you have a Contact model
+        require("./models/Testimonial"); // Assuming you have a Testimonial model
+        require("./models/Career"); // Assuming you have a Career model
         const User = require("./models/User"); 
         seedAdmin(User); // Pass the User model to seedAdmin
     })
@@ -116,10 +123,11 @@ app.get("/api/health", (req, res) => {
 
 // Error Handling Middleware
 app.use((err, req, res, next) => {
+    console.error("GLOBAL SERVER ERROR:", err.stack);
     console.error(err.stack);
     res.status(500).json({
         success: false,
-        message: "Something went wrong!",
+        message: "Internal Server Crash (500)",
         error: err.message,
     });
 });
