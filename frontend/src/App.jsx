@@ -24,6 +24,8 @@ import InstitutionDashboard from "./pages/InstitutionDashboard"
 import StudentDashboard from "./pages/StudentDashboard"
 import AboutUs from './pages/AboutUs';
 import CareerLibrary from './pages/CareerLibrary';
+import AdminLoginPage from "./pages/AdminLoginPage"
+
 function App() {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -78,25 +80,42 @@ function App() {
             <Route path="/career-library" element={<CareerLibrary />} />
             {/* 🚀 START: LOGIN REDIRECTION LOGIC 🚀 */}
             <Route
-                path="/login"
-                element={
+                path="/admin-panel"
+                element={
                     user ? (
-                        // If user is logged in, redirect based on user type
+                        // If user is already logged in, redirect them based on type (Admin -> Dashboard)
                         user.userType === "admin" ? (
                             <Navigate to="/admin-dashboard" replace />
-                        ) : user.userType === "institution" ? (
-                            <Navigate to="/institution-dashboard" replace />
-                        ) : user.userType === "student" ? (
-                            <Navigate to="/student-dashboard" replace />
                         ) : (
-                            <Navigate to="/" replace /> // Redirects any other logged-in user to Home
+                            // Block non-admin users from seeing the admin login page
+                            <Navigate to="/login" replace /> 
                         )
                     ) : (
-                        // If user is NOT logged in, render the Login component
-                        <Login setUser={setUser} user={user} />
+                        // If not logged in, show the dedicated Admin Login Component
+                        <AdminLoginPage setUser={setUser} /> 
                     )
                 }
-            />
+            />
+            <Route
+                path="/login"
+                element={
+                    user ? (
+                        // Block admin access here (redundant, but good to keep clean)
+                        user.userType === "admin" ? (
+                            <Navigate to="/admin-dashboard" replace />
+                        ) : user.userType === "institution" ? (
+                            <Navigate to="/institution-dashboard" replace />
+                        ) : user.userType === "student" ? (
+                            <Navigate to="/student-dashboard" replace />
+                        ) : (
+                            <Navigate to="/" replace />
+                        )
+                    ) : (
+                        // If user is NOT logged in, render the general Login component
+                        <Login setUser={setUser} user={user} />
+                    )
+                }
+            />
             {/* 🚀 END: LOGIN REDIRECTION LOGIC 🚀 */}
             
             <Route path="/profile" element={<Profile user={user} />} />
