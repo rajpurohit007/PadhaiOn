@@ -153,7 +153,9 @@ router.post("/login", async (req, res) => {
             return res.status(403).json({ success: false, message: "Administrator must use the dedicated admin login portal." });
         }
         // If it's a regular Student logging in, use this account.
-        account = userAccount;
+        else{
+          account = userAccount;
+        }
     } 
     
     // 2. If no student/admin user was found, check for Institution account
