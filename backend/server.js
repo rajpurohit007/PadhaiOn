@@ -11,38 +11,50 @@ dotenv.config();
 const app = express();
 
 // Middleware
-app.use(cors());
 const allowedOrigins = [
-    // 1. Your Live Frontend Domain (replace with your actual domain)
-    "https://www.padhaion.com", 
-    "https://padhaion.com", 
-    
-    // 2. Localhost for development/testing
-    "http://localhost:5173", 
-    "http://localhost:3000",
-    
-    // 3. Environment Variable (If CLIENT_URL is set in .env)
-    process.env.CLIENT_URL // This should be "http://localhost:5173" from your .env
+  "https://www.padhaion.com",
+  "https://padhaion.com",
+  "http://localhost:5173",
+  "http://localhost:3000",
+  process.env.CLIENT_URL
 ];
 
-// Use CORS Middleware
 app.use(
-    cors({
-        origin: function (origin, callback) {
-            // Allow requests with no origin (like mobile apps or curl)
-            if (!origin) return callback(null, true); 
-            // Allow specific origins
-            if (allowedOrigins.includes(origin)) {
-                return callback(null, true);
-            }
-            // Block all others
-            const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
-            return callback(new Error(msg), false);
-        },
-        credentials: true, // Important if you use cookies or sessions later
-        methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
-    })
+  cors({
+    origin: function (origin, callback) {
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      return callback(new Error("Not allowed by CORS"));
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
 );
+
+// 🚀 THIS LINE IS CRITICAL
+app.options("*", cors());
+
+// Use CORS Middleware
+// app.use(
+//     cors({
+//         origin: function (origin, callback) {
+//             // Allow requests with no origin (like mobile apps or curl)
+//             if (!origin) return callback(null, true); 
+//             // Allow specific origins
+//             if (allowedOrigins.includes(origin)) {
+//                 return callback(null, true);
+//             }
+//             // Block all others
+//             const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+//             return callback(new Error(msg), false);
+//         },
+//         credentials: true, // Important if you use cookies or sessions later
+//         methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+//     })
+// );
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
