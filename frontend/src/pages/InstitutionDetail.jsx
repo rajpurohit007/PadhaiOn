@@ -133,7 +133,7 @@ export default function InstitutionDetail({ user }) {
     }
 
     // Prepare WhatsApp URL
-    const adminPhone = "919825984800";
+    const adminPhone = "+917048149905";
     const whatsappMessage = `Hi, I am interested in *${institution.name}*.\n\n*My Details:*\nName: ${inquiryData.name}\nPhone: ${inquiryData.phone}\nCourse: ${inquiryData.course || 'Not Specified'}\nMessage: ${inquiryData.message || 'I would like to know more.'}`;
     const whatsappUrl = `https://wa.me/${adminPhone}?text=${encodeURIComponent(whatsappMessage)}`;
 

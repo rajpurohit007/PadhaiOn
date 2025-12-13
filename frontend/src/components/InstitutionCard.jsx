@@ -103,24 +103,7 @@ export default function InstitutionCard({ institution }) {
           </div>
 
           <div className="flex items-center justify-between">
-            <div className="flex space-x-2">
-              {contact.phone && (
-                <a
-                  href={`tel:${contact.phone}`}
-                  className="p-2 bg-green-100 text-green-600 rounded-lg hover:bg-green-200 transition-colors"
-                >
-                  <Phone className="h-4 w-4" />
-                </a>
-              )}
-              {contact.email && (
-                <a
-                  href={`mailto:${contact.email}`}
-                  className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition-colors"
-                >
-                  <Mail className="h-4 w-4" />
-                </a>
-              )}
-            </div>
+            
             <Link
               to={`/institutions/${institution._id}`}
               className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium flex items-center space-x-1"
