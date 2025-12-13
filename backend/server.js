@@ -19,42 +19,25 @@ const allowedOrigins = [
   process.env.CLIENT_URL
 ];
 
-app.use(
-  cors({
-    origin: function (origin, callback) {
-      if (!origin) return callback(null, true);
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
-      return callback(new Error("Not allowed by CORS"));
-    },
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-  })
-);
-
-// 🚀 THIS LINE IS CRITICAL
-app.options("*", cors());
 
 // Use CORS Middleware
-// app.use(
-//     cors({
-//         origin: function (origin, callback) {
-//             // Allow requests with no origin (like mobile apps or curl)
-//             if (!origin) return callback(null, true); 
-//             // Allow specific origins
-//             if (allowedOrigins.includes(origin)) {
-//                 return callback(null, true);
-//             }
-//             // Block all others
-//             const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
-//             return callback(new Error(msg), false);
-//         },
-//         credentials: true, // Important if you use cookies or sessions later
-//         methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
-//     })
-// );
+app.use(
+    cors({
+        origin: function (origin, callback) {
+            // Allow requests with no origin (like mobile apps or curl)
+            if (!origin) return callback(null, true); 
+            // Allow specific origins
+            if (allowedOrigins.includes(origin)) {
+                return callback(null, true);
+            }
+            // Block all others
+            const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+            return callback(new Error(msg), false);
+        },
+        credentials: true, // Important if you use cookies or sessions later
+        methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+    })
+);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
