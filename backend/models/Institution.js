@@ -34,6 +34,13 @@ const institutionSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+
+    otp: {
+        type: String,
+    },
+    otpExpires: {
+        type: Date,
+    },
     // -------------------
 
     name: {

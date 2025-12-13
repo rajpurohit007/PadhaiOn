@@ -14,6 +14,58 @@ const fs = require("fs");
 const nodemailer = require("nodemailer");
 const { isAuthenticated, isStudent } = require("../middleware/roleAuth");
 
+const BASE_STYLE = `
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; 
+    line-height: 1.6; 
+    color: #333333; 
+    max-width: 600px; 
+    margin: 0 auto; 
+    border: 1px solid #e0e0e0;
+    border-radius: 12px;
+    overflow: hidden;
+    background-color: #f9f9f9;
+`;
+const HEADER_STYLE = `
+    background-color: #1e3a8a; /* Dark Blue Header */
+    color: #ffffff; 
+    padding: 25px 25px; 
+    text-align: center;
+    font-size: 26px;
+    font-weight: 600;
+`;
+const BODY_STYLE = `
+    padding: 30px 25px; 
+    background-color: #ffffff;
+`;
+const CODE_BOX_STYLE = `
+    background-color: #eef2ff; /* Light Blue Box */
+    border: 1px solid #c7d2fe;
+    padding: 25px; 
+    border-radius: 8px; 
+    margin: 25px 0; 
+    text-align: center;
+`;
+const CTA_BUTTON_STYLE = `
+    display: inline-block;
+    padding: 14px 30px;
+    margin: 25px 0 10px 0;
+    background-color: #2563eb; /* Primary Blue Button */
+    color: #ffffff;
+    text-decoration: none;
+    border-radius: 6px;
+    font-weight: bold;
+    font-size: 16px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+`;
+const FOOTER_STYLE = `
+    background-color: #f1f5f9;
+    padding: 15px 25px;
+    text-align: center;
+    font-size: 12px;
+    color: #64748b;
+    border-top: 1px solid #e2e8f0;
+`;
+
 // --- 1. MULTER CONFIGURATION ---
 const uploadDir = path.join(__dirname, "../public/uploads");
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
@@ -34,6 +86,8 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+
+
 const upload = multer({
   storage: storage,
   limits: { fileSize: 25 * 1024 * 1024 },
@@ -50,69 +104,196 @@ const uploadFields = upload.fields([
 
 // --- REGISTER ---
 router.post("/register", uploadFields, async (req, res) => {
-  try {
-    const { 
-      name, email, phone, password, userType, 
-      category, location, city, established, specialization, description, totalStudents, feeStructure 
-    } = req.body;
+    try {
+        const { 
+            name, email, phone, password, userType, 
+            category, location, city, established, specialization, description, totalStudents, feeStructure 
+        } = req.body;
+        const mobileRegex = /^[0-9]{10}$/;
 
-    if (userType === "institution") {
-        let existingInst = await Institution.findOne({ email });
-        if (existingInst) return res.status(400).json({ success: false, message: "Institution already registered." });
+        if (userType === "institution") {
+            // --- INSTITUTION REGISTRATION (No OTP, Submits Request only) ---
 
-        let existingReq = await InstitutionRequest.findOne({ email });
-        if (existingReq) return res.status(400).json({ success: false, message: "Application already pending approval." });
+            if (!phone || !mobileRegex.test(phone)) {
+                return res.status(400).json({ 
+                    success: false, 
+                    message: "Invalid mobile number. It must be exactly 10 digits and contain only numbers." 
+                });
+            }
+            let existingInst = await Institution.findOne({ email });
+            if (existingInst) return res.status(400).json({ success: false, message: "Institution already registered." });
 
-        let thumbnailUrl = "/placeholder.svg";
-        let galleryUrls = [];
-        if (req.files?.thumbnail) thumbnailUrl = `/public/uploads/${req.files.thumbnail[0].filename}`;
-        if (req.files?.galleryImages) galleryUrls = req.files.galleryImages.map(f => `/public/uploads/${f.filename}`);
+            let existingReq = await InstitutionRequest.findOne({ email });
+            if (existingReq) return res.status(400).json({ success: false, message: "Application already pending approval." });
 
-        let parsedFee = null;
-        try { parsedFee = JSON.parse(feeStructure); } catch (e) {}
+            let thumbnailUrl = "/placeholder.svg";
+            let galleryUrls = [];
+            if (req.files?.thumbnail && req.files.thumbnail[0]) thumbnailUrl = `/public/uploads/${req.files.thumbnail[0].filename}`;
+            if (req.files?.galleryImages) galleryUrls = req.files.galleryImages.map(f => `/public/uploads/${f.filename}`);
 
+            let parsedFee = null;
+            try { parsedFee = JSON.parse(feeStructure); } catch (e) {}
+
+            const salt = await bcrypt.genSalt(10);
+            const hashedPassword = await bcrypt.hash(password, salt);
+
+            const newRequest = new InstitutionRequest({
+                institutionName: name,
+                email, phone, category, location, city, established, specialization, description, totalStudents,
+                thumbnailUrl, galleryUrls, feeStructure: parsedFee,
+                status: 'pending',
+                password: hashedPassword
+            });
+
+            await newRequest.save();
+            // 🚀 CRITICAL FIX: Return immediately to prevent fall-through
+            return res.status(201).json({ success: true, message: "Application submitted! Wait for admin approval." });
+        }
+
+        // --- STUDENT REGISTRATION (OTP Flow) ---
+
+        let user = await User.findOne({ email });
+        if (user) return res.status(400).json({ success: false, message: "Student already exists." });
 
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
-        const newRequest = new InstitutionRequest({
-            institutionName: name,
-            email, phone, category, location, city, established, specialization, description, totalStudents,
-            thumbnailUrl, galleryUrls, feeStructure: parsedFee,
-            status: 'pending',
-            password: hashedPassword
+        const newUser = new User({
+            name, email, phone,
+            password: hashedPassword,
+            userType: "student",
         });
 
-        await newRequest.save();
-        return res.status(201).json({ success: true, message: "Application submitted! Wait for admin approval." });
+        if (!phone || !mobileRegex.test(phone)) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "Invalid mobile number. It must be exactly 10 digits and contain only numbers." 
+            });
+        }
+
+        await newUser.save();
+
+        // 🚀 NEW LOGIC: GENERATE AND SAVE OTP
+        const otp = Math.floor(100000 + Math.random() * 900000).toString(); // Generate OTP
+        newUser.verificationOtp = otp;
+        newUser.verificationOtpExpires = Date.now() + 10 * 60 * 1000; // 10 minutes expiry
+        newUser.isVerified = false; // Ensure they start unverified
+        await newUser.save();
+        
+        // 🚀 SEND OTP EMAIL (using transporter since emailService wasn't provided)
+        const mailOptions = {
+            from: '"PadhaiOn Support" <padhaion@gmail.com>', // Assuming SMTP_USER is padhaion@gmail.com
+            to: email,
+            subject: 'Verify Your Email - PadhaiOn',
+            html: `<div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; line-height: 1.6; color: #333333; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 12px; overflow: hidden; background-color: #ffffff;">
+                
+                <div style="background-color: #1e3a8a; color: #ffffff; padding: 30px 25px; text-align: center; border-bottom: 4px solid #2563eb;">
+                    <h1 style="margin: 0; font-size: 28px; font-weight: 700;">PadhaiOn Registration</h1>
+                </div>
+
+                <div style="padding: 30px 25px; text-align: center;">
+                    <h2 style="color: #059669; margin-top: 0; font-size: 22px;">Verify Your Email Address</h2>
+                    
+                    <p style="font-size: 16px; margin-bottom: 30px;">
+                        Welcome to PadhaiOn! To complete your registration and ensure security, please use the 6-digit code below.
+                    </p>
+                    
+                    <div style="background-color: #eef2ff; border: 1px solid #c7d2fe; padding: 35px 25px; border-radius: 8px; margin: 25px auto; max-width: 300px;">
+                        <p style="margin: 0 0 10px 0; color: #1f2937; font-size: 16px; font-weight: 600;">Your Verification Code:</p>
+                        <p style="font-size: 48px; font-weight: 900; color: #dc2626; letter-spacing: 10px; margin: 0;">
+                            ${otp}
+                        </p>
+                    </div>
+                    
+                    <p style="font-size: 14px; color: #888888; margin-top: 30px;">
+                        This code is valid for **10 minutes**. Please enter it into the verification screen in your browser.
+                    </p>
+                </div>
+
+                <div style="background-color: #f1f5f9; padding: 15px 25px; text-align: center; font-size: 12px; color: #64748b; border-top: 1px solid #e2e8f0;">
+                    <p style="margin: 0;">If you did not request this code, please ignore this email.</p>
+                    <p style="margin: 5px 0 0 0;">&copy; ${new Date().getFullYear()} PadhaiOn. All rights reserved.</p>
+                </div>
+            </div>`,
+        };
+
+        transporter.sendMail(mailOptions, (error, info) => {
+            if (error) {
+                console.error("Verification Mail Error:", error);
+            }
+        });
+        
+        // Return 202 (Accepted) to switch frontend to OTP input view
+        return res.status(202).json({ 
+            success: true, 
+            message: "Registration successful. Check your email for a verification code.",
+            email: email // Send email back to frontend to prepopulate verification form
+        });
+
+    } catch (err) {
+        console.error("Register Error:", err);
+        res.status(500).json({ success: false, message: "Server Error", error: err.message });
     }
-
-    let user = await User.findOne({ email });
-    if (user) return res.status(400).json({ success: false, message: "Student already exists." });
-
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-
-    const newUser = new User({
-      name, email, phone,
-      password: hashedPassword,
-      userType: "student",
-    });
-
-    await newUser.save();
-
-    const payload = { user: { id: newUser.id, userType: "student", name: newUser.name } };
-    jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "7d" }, (err, token) => {
-        if (err) throw err;
-        res.status(201).json({ success: true, token, message: "Student registered successfully!" });
-    });
-
-  } catch (err) {
-    console.error("Register Error:", err);
-    res.status(500).json({ success: false, message: "Server Error", error: err.message });
-  }
 });
+router.post("/verify-otp", async (req, res) => {
+    try {
+        // NOTE: Since Institution verification is disabled in /register, 
+        // this route only looks for the User model.
+        const { email, otp, userType = 'student' } = req.body;
+        
+        // 🚀 FIX: Rename 'user' to 'account' for consistent payload usage later
+        let account = await User.findOne({ email });
 
+        if (!account) {
+            return res.status(404).json({ success: false, message: "User not found." });
+        }
+        if (account.isVerified) {
+             return res.status(200).json({ success: true, message: "Email already verified." });
+        }
+
+        // 1. Validate OTP
+        if (String(account.verificationOtp).trim() !== String(otp).trim() || account.verificationOtpExpires < Date.now()) {
+            return res.status(400).json({ success: false, message: "Invalid or expired verification code." });
+        }
+
+        // 2. Mark as Verified and Clear OTP fields
+        account.isVerified = true;
+        account.verificationOtp = undefined;
+        account.verificationOtpExpires = undefined;
+        await account.save();
+
+        // 3. Generate Token for the newly verified student (Auto-redirect)
+        try {
+            // 🚀 FIX: Ensure payload uses the correct 'account' details
+            const payload = { user: { id: account._id, userType: account.userType, name: account.name } };
+            
+           const token = await new Promise((resolve, reject) => {
+                jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "7d" }, (err, token) => {
+                    if (err) return reject(err);
+                    resolve(token);
+                });
+            });
+
+            const responseData = { 
+                id: account._id, 
+                name: account.name, 
+                email: account.email, 
+                userType: account.userType, 
+                phone: account.phone,
+            };
+
+            // 🚀 CRITICAL FIX: Respond with token and data to redirect student
+            return res.json({ success: true, token, data: responseData, message: "Verification successful! Welcome." });
+        } catch(err) {
+            console.error("JWT Sign Error:", err);
+            return res.status(500).json({ success: false, message: "Failed to generate login token." });
+        }
+
+    } catch (error) {
+        console.error("Verification CRASH ERROR:", error);
+        res.status(500).json({ success: false, message: "Server Error during verification." });
+    }
+});
 // --- LOGIN ---
 router.post("/admin/login", async (req, res) => {
     const { email, password } = req.body;
@@ -150,7 +331,7 @@ router.post("/login", async (req, res) => {
     if (userAccount) {
         // 🚀 FIX: If any account is found in the User model AND it's an Admin, block it here.
         if (userAccount.userType === 'admin') { 
-        return res.status(403).json({ success: false, message: "Administrator must use the dedicated admin login portal." });
+        return res.status(403).json({ success: false, message: "Access Denied!" });
     }
         // If it's a regular Student logging in, use this account.
           account = userAccount;
@@ -246,12 +427,32 @@ router.post("/forgot-password", async (req, res) => {
     account.resetOtp = otp;
     account.resetOtpExpires = Date.now() + 10 * 60 * 1000;
     await account.save();
-
+    
     const mailOptions = {
-      from: '"PadhaiOn Support" <no-reply@padhaion.com>',
+      from: '"PadhaiOn Support" <padhaion@gmail.com>',
       to: email,
       subject: 'Password Reset OTP - PadhaiOn',
-      text: `Your OTP for password reset is: ${otp}. It is valid for 10 minutes.`,
+      html: `<div style="${BASE_STYLE}">
+            <div style="${HEADER_STYLE}">
+                Password Reset Request
+            </div>
+            <div style="${BODY_STYLE}">
+                <h2 style="color: #dc2626; margin-top: 0;">Your One-Time Password (OTP)</h2>
+                <p>Dear user,</p>
+                <p>A request was made to reset your PadhaiOn password. Use the code below to verify your identity and proceed with the password change.</p>
+                
+                <div style="${CODE_BOX_STYLE}">
+                    <h3 style="margin: 0 0 10px 0; color: #1f2937;">Password Reset Code:</h3>
+                    <p style="font-size: 38px; font-weight: 900; color: #dc2626; letter-spacing: 8px; margin: 0;">${otp}</p>
+                    <p style="font-size: 14px; color: #4b5563; margin-top: 15px;">This code is valid for 10 minutes. Do not share it.</p>
+                </div>
+                
+                <p style="margin-top: 30px; font-size: 14px;">If you did not request a password reset, please ignore this email. Your current password remains secure.</p>
+            </div>
+            <div style="${FOOTER_STYLE}">
+                &copy; ${new Date().getFullYear()} PadhaiOn. All rights reserved.
+            </div>
+        </div>`,
     };
 
     transporter.sendMail(mailOptions, (error, info) => {

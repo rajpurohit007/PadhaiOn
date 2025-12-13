@@ -42,7 +42,7 @@ router.post("/", async (req, res) => {
 
     const mailOptions = {
       from: `"PadhaiOn Contact" <${process.env.EMAIL_USER}>`, // Sender
-      to: "rajpurohit7474747@gmail.com", // Recipient (Your Email)
+      to: "padhaion@gmail.com", // Recipient (Your Email)
       replyTo: email, // Allows you to hit reply to answer the user
       subject: `New Contact Inquiry: ${subject || "General Inquiry"}`,
       html: `

@@ -94,6 +94,7 @@ export const usersAPI = {
   updateProfile: (id, data) => api.put(`/users/${id}`, data),
   forgotPassword: (data) => api.post("/users/forgot-password", data),
   resetPassword: (data) => api.post("/users/reset-password", data),
+  verifyOtp: (data) => api.post("/users/verify-otp", data),
 };
 
 export const consultationsAPI = {
@@ -146,7 +147,7 @@ api.interceptors.response.use(
   }
 );
 export const adminAPI = {
-  login: (data) => api.post("/users/login", data), // Changed from /admin/login to /users/login
+  login: (data) => api.post("/admin/login", data), // Changed from /admin/login to /users/login
   getDashboardStats: () => api.get("/admin/dashboard/stats"),
   getStudents: (params) => api.get("/admin/students", { params }),
   getInstitutions: (params) => api.get("/admin/institutions", { params }),

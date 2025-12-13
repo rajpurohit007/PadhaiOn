@@ -16,6 +16,8 @@ const seedAdmin = async () => {
       console.log("✅ Admin created:");
     } else {
       console.log("ℹ️ Admin already exists");
+      // In backend/routes/users.js
+console.log("SMTP_USER READ:", process.env.SMTP_USER);
     }
   } catch (err) {
     console.error("❌ Error creating admin:", err.message);

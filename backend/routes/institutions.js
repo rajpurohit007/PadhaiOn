@@ -6,6 +6,7 @@ const Inquiry = require("../models/Inquiry");
 const Review = require("../models/Review");
 const User = require("../models/User"); 
 const Notification = require("../models/Notification"); // 🚀 ADDED: Import Notification
+const { sendVerificationOtpEmail } = require("../services/emailService");
 
 // Get all institutions (Permissive filter)
 router.get("/", async (req, res) => {
@@ -58,15 +59,100 @@ router.get("/:id", async (req, res) => {
 
 // Create institution
 router.post("/", async (req, res) => {
-  try {
-    const institution = new Institution(req.body);
-    await institution.save();
-    res.status(201).json({ success: true, message: "Institution created", data: institution });
-  } catch (error) {
-    res.status(400).json({ success: false, message: "Error creating institution", error: error.message });
-  }
+  try {
+    // 🚀 FIX 1: Destructure email from req.body
+    const { email } = req.body;
+    
+    // 🚀 FIX 2: Check if institution already exists (or is unverified)
+    const existingInstitution = await Institution.findOne({ email });
+    if (existingInstitution) {
+        if (existingInstitution.isVerified === false) {
+             return res.status(400).json({ success: false, message: "Institution registered, but email not verified. Please check your inbox for the OTP." });
+        }
+        return res.status(400).json({ success: false, message: "Institution already exists" });
+    }
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpires = Date.now() + 10 * 60 * 1000; // 10 minutes
+
+    const institution = new Institution({
+        ...req.body,
+        isVerified: false, 
+        otp,
+        otpExpires,
+    });
+    await institution.save();
+
+    // Now email is defined and the account is saved temporarily
+    const mailResult = await sendVerificationOtpEmail(email, otp);
+    if (!mailResult.success) {
+        console.error("Failed to send institution verification email:", mailResult.error);
+        // Allow registration to proceed, but user won't get the email (delivery issue)
+    }
+
+    // CRITICAL: NO ADMIN NOTIFICATION HERE. IT MUST BE AFTER OTP VERIFICATION.
+    res.status(202).json({ success: true, message: "Institution registered successfully. Please verify your email with the OTP sent." });
+  } catch (error) {
+    // Check for specific unique index errors (like duplicate email)
+    if (error.code === 11000) {
+        return res.status(400).json({ success: false, message: "Email already registered." });
+    }
+    res.status(400).json({ success: false, message: "Error creating institution", error: error.message });
+  }
 });
 
+// 🚀 NEW ROUTE: Verify OTP and Trigger Admin Request
+router.post("/verify-otp", async (req, res) => {
+    try {
+        const { email, otp } = req.body;
+
+        const institution = await Institution.findOne({ email });
+
+        if (!institution) {
+            return res.status(404).json({ success: false, message: "Institution not found." });
+        }
+
+        if (institution.isVerified) {
+            return res.status(400).json({ success: false, message: "Email already verified." });
+        }
+
+        // 1. Check if OTP is correct AND not expired
+        if (institution.otp === otp && institution.otpExpires > Date.now()) {
+            // 2. Verification success: Update status
+            institution.isVerified = true;
+            institution.otp = undefined; // Clear the OTP field
+            institution.otpExpires = undefined; // Clear the expiry field
+            await institution.save();
+            
+            // 🚀 TRIGGER ADMIN REQUEST/NOTIFICATION HERE
+            // The request is now verified, so we notify the admin
+            await Notification.create({
+                userId: institution._id, // Institution ID is the user ID here
+                type: "institution_request",
+                title: "NEW Institution Request Pending Approval",
+                message: `The institution ${institution.name} has submitted a verified registration request.`,
+                relatedId: institution._id,
+                relatedModel: "Institution"
+            });
+            // You might also want to send an email to the ADMIN here if necessary.
+
+            return res.status(200).json({ 
+                success: true, 
+                message: "Email verified successfully. Your registration request has been submitted for admin review." 
+            });
+        } else {
+            // 3. OTP is wrong or expired
+            return res.status(400).json({ 
+                success: false, 
+                message: "Invalid or expired OTP. Please try again or re-register." 
+            });
+        }
+
+    } catch (error) {
+        console.error("Institution OTP verification error:", error);
+        res.status(500).json({ success: false, message: "Server error during verification." });
+    }
+});
 // --- INQUIRY ROUTE ---
 router.post("/:id/inquiry", async (req, res) => {
   try {

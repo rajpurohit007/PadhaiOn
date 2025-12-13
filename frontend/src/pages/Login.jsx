@@ -18,7 +18,7 @@ export default function Login({ setUser, user }) {
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const [fileError, setFileError] = useState(null);
-
+    const [verificationUserType, setVerificationUserType] = useState(null);
     const [formData, setFormData] = useState({
         name: "",
         email: "",
@@ -42,7 +42,7 @@ export default function Login({ setUser, user }) {
         thumbnail: null,
         gallery: [],
     });
-
+    
     // --- HANDLERS ---
 
     const handleImageChange = (e) => {
@@ -74,13 +74,13 @@ export default function Login({ setUser, user }) {
 
     // 🚀 REDIRECTION LOGIC
     useEffect(() => {
-        if (user) {
-            if (user.userType === "admin") navigate("/admin-dashboard", { replace: true });
-            else if (user.userType === "institution") navigate("/institution-dashboard", { replace: true });
-            else if (user.userType === "student") navigate("/student-dashboard", { replace: true });
-            else navigate("/", { replace: true });
-        }
-    }, [user, navigate]);
+        if (user) {
+            if (user.userType === "admin") navigate("/admin-dashboard", { replace: true });
+            else if (user.userType === "institution") navigate("/institution-dashboard", { replace: true });
+            else if (user.userType === "student") navigate("/student-dashboard", { replace: true });
+            else navigate("/", { replace: true });
+        }
+    }, [user, navigate]);
 
     const handleInputChange = (e) => {
         setFormData({
@@ -97,7 +97,37 @@ export default function Login({ setUser, user }) {
         setImages({ thumbnail: null, gallery: [] });
         setFileError(null);
     };
+    // --- OTP VERIFICATION HANDLER ---
+const handleVerifyOtp = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+    const response = await usersAPI.verifyOtp({
+                email: formData.email,
+                otp: formData.otp,
+                userType: verificationUserType,
+            });
 
+        toast.success(response.data.message);
+        if (verificationUserType === 'institution') {
+                // If it's an institution, they must wait for admin approval, so they go to login.
+                setView("login");
+            } else { 
+                // Student successful verification: Auto-login and redirect to dashboard
+                const userData = response.data.data;
+                const token = response.data.token;
+
+                localStorage.setItem("padhaiOn_user", JSON.stringify(userData));
+                localStorage.setItem("padhaiOn_token", token);
+                // Calling setUser triggers the useEffect for immediate redirection to student-dashboard
+                setUser(userData); 
+            }
+        } catch (error) {
+            toast.error(error.response?.data?.message || "Verification failed");
+        } finally {
+            setLoading(false);
+        }
+    };
     // --- SUBMIT HANDLERS ---
 
     const handleSubmit = async (e) => {
@@ -173,7 +203,9 @@ export default function Login({ setUser, user }) {
                 const response = await usersAPI.register(data);
                 toast.success(response.data.message);
                 setView("login");
-
+                // setVerificationUserType('institution');
+                // setFormData(prev => ({...prev, email: response.data.email || formData.email})); 
+                // setView("verify-otp");
             } else {
                 const registrationData = {
                     name: formData.name,
@@ -183,9 +215,14 @@ export default function Login({ setUser, user }) {
                     password: formData.password,
                 };
 
-                await usersAPI.register(registrationData);
-                toast.success("Registration successful! Please login.");
-                setView("login");
+                const response = await usersAPI.register(registrationData);
+                toast.success(response.data.message);
+                
+                // 🚀 NEW: Switch to OTP Verification view
+                // We use the email returned by the backend (response.data.email)
+setVerificationUserType(formData.userType);
+                setFormData(prev => ({...prev, email: response.data.email || formData.email})); 
+                setView("verify-otp");
             }
         }
     } catch (error) {
@@ -283,12 +320,35 @@ const renderResetPassword = () => (
                 <input type="password" name="confirmPassword" required value={formData.confirmPassword} onChange={handleInputChange} className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Confirm New Password" />
             </div>
         </div>
+
+
+
+
         <button type="submit" disabled={loading} className="w-full bg-green-600 text-white py-3 rounded-lg font-bold hover:bg-green-700 transition-colors">
             {loading ? "Resetting..." : "Reset Password"}
         </button>
     </form>
 );
-
+const renderVerifyOtp = () => (
+    <form onSubmit={handleVerifyOtp} className="space-y-6 max-w-md mx-auto">
+        <div className="bg-blue-50 p-4 rounded-lg text-sm text-blue-800 border border-blue-200">
+            A verification code has been sent to **{formData.email}**. Enter it below to complete registration.
+        </div>
+        <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Verification Code (OTP)</label>
+            <div className="relative">
+                <Key className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                <input type="text" name="otp" required value={formData.otp} onChange={handleInputChange} className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="6-digit code" />
+            </div>
+        </div>
+        <button type="submit" disabled={loading} className="w-full bg-green-600 text-white py-3 rounded-lg font-bold hover:bg-green-700 transition-colors">
+            {loading ? "Verifying..." : "Verify & Complete"}
+        </button>
+        <button type="button" onClick={() => setView("login")} className="w-full text-gray-600 text-sm mt-2 hover:text-gray-800 underline">
+            Back to Login
+        </button>
+    </form>
+);
 const renderRegistrationForm = () => (
     <form onSubmit={handleSubmit} className="space-y-6">
         {/* ... Registration Fields ... */}
@@ -430,7 +490,7 @@ return (
                 {/* VIEW SWITCHING */}
                 {view === 'forgot-email' && renderForgotPassword()}
                 {view === 'reset-password' && renderResetPassword()}
-
+                {view === 'verify-otp' && renderVerifyOtp()} 
                 {view === 'login' && (
                     <form onSubmit={handleSubmit} className="space-y-6 max-w-md mx-auto">
                         <div>
@@ -445,8 +505,7 @@ return (
                                     value={formData.email}
                                     onChange={handleInputChange}
                                     className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                                    placeholder="Enter your email"
-                                />
+                                    placeholder="Enter your email" />
                             </div>
                         </div>
                         <div>

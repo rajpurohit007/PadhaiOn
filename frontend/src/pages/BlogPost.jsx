@@ -101,7 +101,7 @@ export default function BlogPost() {
               </div>
               <div>
                 <p className="font-medium text-gray-900">{blog.author}</p>
-                <p className="text-sm text-gray-600">Education Consultant</p>
+                {/* <p className="text-sm text-gray-600">Education Consultant</p> */}
               </div>
             </div>
 
